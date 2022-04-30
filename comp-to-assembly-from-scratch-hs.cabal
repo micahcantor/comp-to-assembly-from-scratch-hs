@@ -38,3 +38,12 @@ executable comp-to-assembly-from-scratch-hs
     build-depends:    base ^>=4.14.3.0
     hs-source-dirs:   app
     default-language: Haskell2010
+
+test-suite comp-to-assembly-from-scratch-hs-test
+    main-is:          Spec.hs
+    other-modules:    ParserSpec
+    hs-source-dirs:   test
+    type:             exitcode-stdio-1.0
+    default-language: Haskell2010
+    default-extensions: OverloadedStrings
+    build-depends:    base, text, hspec, megaparsec, raw-strings-qq, comp-to-assembly-from-scratch-hs

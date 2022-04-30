@@ -9,6 +9,7 @@ import Expr
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec.Debug
 
 {- Megaparsec helpers -}
 
@@ -30,83 +31,90 @@ identifier :: Parser Text
 identifier = label "identifier" $
   lexeme $ do
     firstChar <- letterChar <|> char '_'
-    rest <- many (letterChar <|> char '_' <|> digitChar)
+    rest <- many (alphaNumChar <|> char '_')
     let value = T.pack (firstChar : rest)
     pure value
 
 functionToken :: Parser Text
-functionToken = lexeme (string "function")
+functionToken = lexeme (string "function") <?> "function"
 
 ifToken :: Parser Text
-ifToken = lexeme (string "if")
+ifToken = lexeme (string "if") <?> "if"
 
 elseToken :: Parser Text
-elseToken = lexeme (string "else")
+elseToken = lexeme (string "else") <?> "else"
 
 returnToken :: Parser Text
-returnToken = lexeme (string "return")
+returnToken = lexeme (string "return") <?> "return"
 
 varToken :: Parser Text
-varToken = lexeme (string "var")
+varToken = lexeme (string "var") <?> "var"
 
 whileToken :: Parser Text
-whileToken = lexeme (string "while")
+whileToken = lexeme (string "while") <?> "while"
 
 comma :: Parser Text
-comma = lexeme (string ",")
+comma = lexeme (string ",") <?> "','"
 
 assign :: Parser Text
-assign = lexeme (string "=")
+assign = lexeme (string "=") <?> "'='"
 
 semicolon :: Parser Text
-semicolon = lexeme (string ";")
+semicolon = lexeme (string ";") <?> "';'"
 
 leftParen :: Parser Text
-leftParen = lexeme (string "(")
+leftParen = lexeme (string "(") <?> "'('"
 
 rightParen :: Parser Text
-rightParen = lexeme (string ")")
+rightParen = lexeme (string ")") <?> "')'"
 
 leftBrace :: Parser Text
-leftBrace = lexeme (string "{")
+leftBrace = lexeme (string "{") <?> "'{'"
 
 rightBrace :: Parser Text
-rightBrace = lexeme (string "}")
+rightBrace = lexeme (string "}") <?> "'}'"
 
-notSymbol :: Parser (Expr -> Expr)
-notSymbol = lexeme $ do
-  _ <- string "!"
-  pure Not
+notToken :: Parser (Expr -> Expr)
+notToken = label "not" $
+  lexeme $ do
+    _ <- string "!"
+    pure Not
 
 equal :: Parser (Expr -> Expr -> Expr)
-equal = lexeme $ do
-  _ <- string "=="
-  pure Equal
+equal = label "'=='" $
+  lexeme $ do
+    _ <- string "=="
+    pure Equal
 
 notEqual :: Parser (Expr -> Expr -> Expr)
-notEqual = lexeme $ do
-  _ <- string "!="
-  pure NotEqual
+notEqual = label "'!='" $
+  lexeme $ do
+    _ <- string "!="
+    pure NotEqual
 
 plus :: Parser (Expr -> Expr -> Expr)
-plus = lexeme $ do
-  _ <- string "+"
-  pure Add
+plus = label "'+'" $
+  lexeme $ do
+    _ <- string "+"
+    pure Add
 
 minus :: Parser (Expr -> Expr -> Expr)
-minus = lexeme $ do
-  _ <- string "-"
-  pure Subtract
+minus = label "'-'" $
+  lexeme $ do
+    _ <- string "-"
+    pure Subtract
 
 star :: Parser (Expr -> Expr -> Expr)
-star = lexeme $ do
-  _ <- string "*"
-  pure Multiply
+star = label "'*'" $
+  lexeme $ do
+    _ <- string "*"
+    pure Multiply
 
 slash :: Parser (Expr -> Expr -> Expr)
-slash = lexeme $ do
-  _ <- string "/"
-  pure Divide
+slash = label "'/'" $
+  lexeme $ do
+    _ <- string "/"
+    pure Divide
 
 parenthesized :: Parser a -> Parser a
 parenthesized p = do
@@ -120,9 +128,9 @@ parenthesized p = do
   call <- ID LEFT_PAREN args RIGHT_PAREN
   atom <- call | ID | NUMBER | LEFT_PAREN expression RIGHT_PAREN
   unary <- NOT? atom
-  product <- unary ((STAR / SLASH) unary)*
-  sum <- product ((PLUS / MINUS) product)*
-  comparison <- sum ((EQUAL / NOT_EQUAL) sum)*
+  product <- unary ((STAR | SLASH) unary)*
+  sum <- product ((PLUS | MINUS) product)*
+  comparison <- sum ((EQUAL | NOT_EQUAL) sum)*
   expression <- comparison
 
 -}
@@ -142,23 +150,28 @@ numberExpr = label "number" $
     pure (Number value)
 
 identifierExpr :: Parser Expr
-identifierExpr = Identifier <$> identifier
+identifierExpr = lexeme $ Identifier <$> identifier
 
 -- atom <- call | ID | NUMBER | LEFT_PAREN expression RIGHT_PAREN
 atomExpr :: Parser Expr
-atomExpr = callExpr <|> identifierExpr <|> numberExpr <|> parenthesized expr
+atomExpr =
+  try callExpr
+    <|> identifierExpr
+    <|> numberExpr
+    <|> parenthesized expr
+    <?> "atom"
 
 -- unary <- NOT? atom
 unaryExpr :: Parser Expr
-unaryExpr = do
-  not <- optional notSymbol
+unaryExpr = label "unary" $ do
+  not <- optional notToken
   atom <- atomExpr
   case not of
     Nothing -> pure atom
     Just _ -> pure (Not atom)
 
 -- parses a left-associative infix operator
-parseInfix :: Parser (a -> a -> a) -> Parser a -> Parser a
+parseInfix :: Show a => Parser (a -> a -> a) -> Parser a -> Parser a
 parseInfix operatorParser termParser = do
   first <- termParser
   operatorTerms <- many $ do
@@ -170,25 +183,27 @@ parseInfix operatorParser termParser = do
 
 -- product <- unary ((STAR / SLASH) unary)*
 productExpr :: Parser Expr
-productExpr = parseInfix (star <|> slash) unaryExpr
+productExpr = (parseInfix (star <|> slash) unaryExpr <?> "product")
 
 -- sum <- product ((PLUS / MINUS) product)*
 sumExpr :: Parser Expr
-sumExpr = parseInfix (plus <|> minus) productExpr
+sumExpr = (parseInfix (plus <|> minus) productExpr <?> "sum")
 
 -- comparison <- sum ((EQUAL / NOT_EQUAL) sum)*
 comparisonExpr :: Parser Expr
-comparisonExpr = parseInfix (equal <|> notEqual) sumExpr
+comparisonExpr = (parseInfix (equal <|> notEqual) sumExpr <?> "comparison")
 
 expr :: Parser Expr
-expr = comparisonExpr
+expr = comparisonExpr <?> "expression"
 
 {- Statement Parser Grammar:
 
   returnStatement <- RETURN expression SEMICOLON
   expressionStatement <- expression SEMICOLON
-  ifStatement <- IF LEFT_PAREN expression RIGHT_PAREN
-  statement ELSE statement
+  ifStatement <-
+    IF LEFT_PAREN expression RIGHT_PAREN
+    statement
+    ELSE statement
   whileStatement <- WHILE LEFT_PAREN expression RIGHT_PAREN statement
   varStatement <- VAR ID ASSIGN expression SEMICOLON
   assignmentStatement <- ID ASSIGN EXPRESSION SEMICOLON
@@ -266,7 +281,7 @@ functionStatement :: Parser Expr
 functionStatement = do
   _ <- functionToken
   name <- identifier
-  params <- parenthesized (many identifier)
+  params <- parenthesized (identifier `sepBy` comma)
   block <- blockStatement
   pure (Function name params block)
 
@@ -276,14 +291,21 @@ statement =
     <|> functionStatement
     <|> ifStatement
     <|> whileStatement
-    <|> varStatement
-    <|> assignmentStatement
+    <|> try varStatement
+    <|> try assignmentStatement
     <|> blockStatement
     <|> expressionStatement
 
+statements :: Parser Expr
+statements = do
+  skipSpace
+  stmts <- many statement
+  eof
+  pure (Block stmts)
+
 parseProgram :: Text -> FilePath -> Either String Expr
-parseProgram input filename =
-  let outputE = parse (between skipSpace eof (many statement >>= (pure . Block))) filename input
+parseProgram input path =
+  let outputE = parse statements path input
    in case outputE of
         Left err -> Left (errorBundlePretty err)
         Right output -> Right output

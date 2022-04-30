@@ -1,0 +1,2 @@
+packages: ./comp-to-assembly-from-scratch-hs.cabal
+tests: True
