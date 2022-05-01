@@ -14,7 +14,7 @@ data CompilerError
   = CompilerError Text
   | BadSyntax Text
   | Default
-  deriving (Eq)
+  deriving (Eq, Show)
 
 newtype Emit a = Emit {unEmit :: StateT Text (ExceptT CompilerError Identity) a}
   deriving (Functor, Applicative, Monad, MonadState Text, MonadError CompilerError)
@@ -25,6 +25,9 @@ runEmit source emit = runIdentity (runExceptT (runStateT (unEmit emit) source))
 execEmit :: Text -> Emit a -> Either CompilerError Text
 execEmit source emit = runIdentity (runExceptT (execStateT (unEmit emit) source))
 
+execEmitDefault :: Emit a -> Either CompilerError Text
+execEmitDefault = execEmit ""
+
 addLine :: Text -> Emit ()
 addLine ln = modify (<> ln <> "\n")
 
@@ -34,7 +37,10 @@ toText = T.pack . show
 emit :: Expr -> Emit ()
 emit expr = case expr of
   Main _ -> emitMain expr
-  _ -> undefined
+  Assert _ -> emitAssert expr
+  Number _ -> emitNumber expr
+  Block _ -> emitBlock expr
+  _ -> throwError Default
 
 emitMain :: Expr -> Emit ()
 emitMain = \case
@@ -65,4 +71,9 @@ emitNumber = \case
   Number val ->
     -- load integer into r0, use ldr in case value can't fit in immediate.
     addLine ("  ldr r0, =" <> toText val) 
+  _ -> throwError Default
+
+emitBlock :: Expr -> Emit ()
+emitBlock = \case
+  Block stmts -> forM_ stmts emit
   _ -> throwError Default

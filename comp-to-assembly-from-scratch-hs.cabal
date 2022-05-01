@@ -25,7 +25,7 @@ library
     build-depends: base, text, megaparsec, mtl
     default-extensions: OverloadedStrings
     hs-source-dirs: src
-    exposed-modules: Expr, Parser
+    exposed-modules: Expr, Parser, Emit
 
 executable comp-to-assembly-from-scratch-hs
     main-is:          Main.hs
@@ -35,7 +35,7 @@ executable comp-to-assembly-from-scratch-hs
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.14.3.0
+    build-depends:    base ^>=4.14.3.0, text, comp-to-assembly-from-scratch-hs
     hs-source-dirs:   app
     default-language: Haskell2010
 

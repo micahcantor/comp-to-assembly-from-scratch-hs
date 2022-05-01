@@ -313,9 +313,7 @@ parseProgram input path =
         Left err -> Left (errorBundlePretty err)
         Right output -> Right output
 
-parseProgramFile :: FilePath -> IO ()
+parseProgramFile :: FilePath -> IO (Either String Expr)
 parseProgramFile path = do
   source <- TIO.readFile path
-  case parseProgram source path of
-    Left errMsg -> putStr errMsg
-    Right expr -> print expr
+  pure (parseProgram source path)

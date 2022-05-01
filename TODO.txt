@@ -1,2 +1,2 @@
 [] Switch from Text to Builder
-[] Add main method to executable
+[x] Add main method to executable
