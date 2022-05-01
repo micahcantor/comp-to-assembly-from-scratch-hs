@@ -59,7 +59,16 @@ emit expr = case expr of
 
 emitMain :: Expr -> Emit ()
 emitMain = \case
-  
+  Main block -> do
+    case block of
+      Block stmts -> do
+        addLine ".global main"
+        addLine "main:"           -- define main procedure
+        addLine "  push {fp, lr}" -- push lr, align stack with fp
+        forM_ stmts emit
+        addLine "  mov r0, #0"    -- set return value to 0
+        addLine "  pop {fp, pc}"  -- restore fp, push lr into pc to return from main
+      _ -> throwError (BadSyntax "main")
   _ -> throwError Default
 
 emitAssert :: Expr -> Emit ()
