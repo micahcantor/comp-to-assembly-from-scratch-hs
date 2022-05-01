@@ -4,11 +4,14 @@
 
 module Emit where
 
+import Control.Monad.Writer
 import Control.Monad.Except
 import Control.Monad.Identity (Identity (runIdentity))
 import Control.Monad.State
 import Data.Text (Text)
 import Expr
+import Data.Text.Lazy.Builder (Builder)
+import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text as T
 
 data CompilerError
@@ -17,29 +20,18 @@ data CompilerError
   | Default
   deriving (Eq, Show)
 
-newtype Emit a = Emit {unEmit :: StateT Text (ExceptT CompilerError Identity) a}
-  deriving (Functor, Applicative, Monad, MonadState Text, MonadError CompilerError)
+newtype ProgramState = ProgramState {labelCounter :: Int}
 
-runEmit :: Text -> Emit a -> Either CompilerError (a, Text)
-runEmit source emit = runIdentity (runExceptT (runStateT (unEmit emit) source))
+type Asm = Builder
 
-execEmit :: Text -> Emit a -> Either CompilerError Text
-execEmit source emit = runIdentity (runExceptT (execStateT (unEmit emit) source))
+newtype Emit a = Emit {unEmit :: StateT ProgramState (WriterT Asm (ExceptT CompilerError Identity)) a}
+  deriving (Functor, Applicative, Monad, MonadState ProgramState, MonadError CompilerError, MonadWriter Asm)
 
-execEmitDefault :: Emit a -> Either CompilerError Text
-execEmitDefault = execEmit ""
+execEmit :: ProgramState -> Emit a -> Either CompilerError Asm
+execEmit counter emit = runIdentity (runExceptT (execWriterT (execStateT (unEmit emit) counter)))
 
-addLine :: Text -> Emit ()
-addLine ln = modify (<> ln <> "\n")
-
-toText :: Show a => a -> Text
-toText = T.pack . show
-
-trimDouble :: Text -> Text
-trimDouble txt =
-  case T.stripSuffix ".0" txt of
-    Just digits -> digits
-    Nothing -> txt
+execEmitDefault :: Emit a -> Either CompilerError Asm
+execEmitDefault = execEmit (ProgramState 0)
 
 emit :: Expr -> Emit ()
 emit expr = case expr of
@@ -107,9 +99,27 @@ emit expr = case expr of
       throwError (CompilerError "More than 4 arguments not supported")
     addLine ("  bl " <> callee) -- branch and link to function name
 
+  If condition consequent alternate -> do
+    ifFalseLabel <- makeLabel -- unique label for falsey branch
+    endIfLabel <- makeLabel   -- unique label for after if is evaluated
+    emit condition            -- emit condition code
+    addLine "  cmp r0, #0"    -- check if condition is false
+    addLine ("  beq " <> ifFalseLabel) -- if so, branch to ifFalse label
+    emit consequent           -- emit consequent, executed only if we do not branch to ifFalse
+    addLine ("  b " <> endIfLabel) -- branch to endIf label either way
+    addLine (ifFalseLabel <> ":")  -- define ifFalse label
+    emit alternate                 -- ifFalse label contains alternate code
+    addLine (endIfLabel <> ":")    -- define endIf label with whatever comes next
+
   Block stmts -> 
     forM_ stmts emit
+
   _ -> throwError Default
+
+addLine :: Text -> Emit ()
+addLine ln = 
+  let builder = Builder.fromText (ln <> "\n")
+   in pass (pure ((), (<> builder)))
 
 emitInfix :: Expr -> Expr -> Emit () -> Emit ()
 emitInfix left right action = do
@@ -119,3 +129,25 @@ emitInfix left right action = do
   addLine "pop {r1, ip}"      -- restore left result from stack
   action                      -- perform action on r0 and r1
 
+getLabelCounter :: Emit Int
+getLabelCounter = do
+  count <- gets labelCounter
+  pure count
+
+incrementLabelCounter :: Emit ()
+incrementLabelCounter = modify (\s -> s {labelCounter = (labelCounter s) + 1})
+
+makeLabel :: Emit Text
+makeLabel = do
+  incrementLabelCounter
+  counter <- getLabelCounter
+  pure (".L" <> toText counter)
+
+toText :: Show a => a -> Text
+toText = T.pack . show
+
+trimDouble :: Text -> Text
+trimDouble txt =
+  case T.stripSuffix ".0" txt of
+    Just digits -> digits
+    Nothing -> txt
