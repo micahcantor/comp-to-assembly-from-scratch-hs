@@ -9,7 +9,6 @@ import Expr
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Text.Megaparsec.Debug
 
 {- Megaparsec helpers -}
 
@@ -150,7 +149,7 @@ numberExpr = label "number" $
     pure (Number value)
 
 identifierExpr :: Parser Expr
-identifierExpr = lexeme $ Identifier <$> identifier
+identifierExpr = Identifier <$> identifier
 
 -- atom <- call | ID | NUMBER | LEFT_PAREN expression RIGHT_PAREN
 atomExpr :: Parser Expr
@@ -171,7 +170,7 @@ unaryExpr = label "unary" $ do
     Just _ -> pure (Not atom)
 
 -- parses a left-associative infix operator
-parseInfix :: Show a => Parser (a -> a -> a) -> Parser a -> Parser a
+parseInfix :: Parser (a -> a -> a) -> Parser a -> Parser a
 parseInfix operatorParser termParser = do
   first <- termParser
   operatorTerms <- many $ do
@@ -225,20 +224,20 @@ expr = comparisonExpr <?> "expression"
  -}
 
 returnStatement :: Parser Expr
-returnStatement = do
+returnStatement = label "return statement" $ do
   _ <- returnToken
   term <- expr
   _ <- semicolon
   pure (Return term)
 
 expressionStatement :: Parser Expr
-expressionStatement = do
+expressionStatement = label "expression statement" $ do
   term <- expr
   _ <- semicolon
   pure term
 
 ifStatement :: Parser Expr
-ifStatement = do
+ifStatement = label "if statement" $ do
   _ <- ifToken
   condition <- parenthesized expr
   consequent <- statement
@@ -247,14 +246,14 @@ ifStatement = do
   pure (If condition consequent alternate)
 
 whileStatement :: Parser Expr
-whileStatement = do
+whileStatement = label "while statement" $ do
   _ <- whileToken
   condition <- parenthesized expr
   body <- statement
   pure (While condition body)
 
 varStatement :: Parser Expr
-varStatement = do
+varStatement = label "var statement" $ do
   _ <- varToken
   name <- identifier
   _ <- assign
@@ -263,7 +262,7 @@ varStatement = do
   pure (Var name value)
 
 assignmentStatement :: Parser Expr
-assignmentStatement = do
+assignmentStatement = label "assignment statement" $ do
   name <- identifier
   _ <- assign
   value <- expr
@@ -271,14 +270,14 @@ assignmentStatement = do
   pure (Assign name value)
 
 blockStatement :: Parser Expr
-blockStatement = do
+blockStatement = label "block statement" $ do
   _ <- leftBrace
   statements <- many statement
   _ <- rightBrace
   pure (Block statements)
 
 functionStatement :: Parser Expr
-functionStatement = do
+functionStatement = label "function statement" $ do
   _ <- functionToken
   name <- identifier
   params <- parenthesized (identifier `sepBy` comma)
@@ -291,7 +290,7 @@ statement =
     <|> functionStatement
     <|> ifStatement
     <|> whileStatement
-    <|> try varStatement
+    <|> varStatement
     <|> try assignmentStatement
     <|> blockStatement
     <|> expressionStatement
