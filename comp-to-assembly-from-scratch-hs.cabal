@@ -22,7 +22,7 @@ maintainer:         micahcantor01@gmail.com
 extra-source-files: CHANGELOG.md
 
 library
-    build-depends: base, text, megaparsec
+    build-depends: base, text, megaparsec, mtl
     default-extensions: OverloadedStrings
     hs-source-dirs: src
     exposed-modules: Expr, Parser

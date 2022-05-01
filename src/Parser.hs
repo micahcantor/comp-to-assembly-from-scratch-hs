@@ -139,7 +139,9 @@ callExpr :: Parser Expr
 callExpr = label "call" $ do
   callee <- identifier
   args <- parenthesized (expr `sepBy` comma)
-  pure (Call callee args)
+  if callee == "assert"
+    then pure (Assert (head args))
+    else pure (Call callee args)
 
 numberExpr :: Parser Expr
 numberExpr = label "number" $
@@ -282,7 +284,9 @@ functionStatement = label "function statement" $ do
   name <- identifier
   params <- parenthesized (identifier `sepBy` comma)
   block <- blockStatement
-  pure (Function name params block)
+  if name == "main"
+    then pure (Main block)
+    else pure (Function name params block)
 
 statement :: Parser Expr
 statement =
