@@ -6,3 +6,7 @@ function factorial(n) {
     }
     return result;
 }
+
+function main() {
+    assert(factorial(5) == 120);
+}

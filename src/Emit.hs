@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DoAndIfThenElse #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
@@ -60,26 +59,26 @@ emit expr = case expr of
     addLine "  movne r0, #0"  -- move 0 (false) into r0 if expr is 1
 
   Add left right -> emitInfix left right $
-    addLine "add r0, r0, r1"
+    addLine "  add r0, r0, r1"
 
   Subtract left right -> emitInfix left right $
-    addLine "sub r0, r0, r1"
+    addLine "  sub r0, r0, r1"
 
   Multiply left right -> emitInfix left right $
-    addLine "mul r0, r0, r1"
+    addLine "  mul r0, r0, r1"
 
   Divide left right -> emitInfix left right $
-    addLine "udiv r0, r0, r1"
+    addLine "  udiv r0, r0, r1"
 
   Equal left right -> emitInfix left right $ do
-    addLine "cmp r0, r1"    -- compare left to right
-    addLine "moveq r0, #1"  -- if equal, store 1
-    addLine "moveq r0, #0"  -- otherwise store 0
+    addLine "  cmp r0, r1"    -- compare left to right
+    addLine "  moveq r0, #1"  -- if equal, store 1
+    addLine "  moveq r0, #0"  -- otherwise store 0
 
   NotEqual left right -> emitInfix left right $ do
-    addLine "cmp r0, r1"    -- compare left to right
-    addLine "moveq r0, #0"  -- if equal, store 0
-    addLine "moveq r0, #1"  -- otherwise store 1
+    addLine "  cmp r0, r1"    -- compare left to right
+    addLine "  moveq r0, #0"  -- if equal, store 0
+    addLine "  moveq r0, #1"  -- otherwise store 1
 
   Call callee args -> do
     let count = length args
@@ -127,7 +126,7 @@ emit expr = case expr of
 
   Identifier name -> do
     withLookupOffset name $ \offset ->
-      addLine ("  ldr r0, [fp, " <> (toText offset))
+      addLine ("  ldr r0, [fp, #" <> (toText offset) <> "]")
   
   Return term -> do
     emit term
@@ -144,7 +143,7 @@ emit expr = case expr of
   Assign name value -> do
     emit value
     withLookupOffset name $ \offset ->
-      addLine ("  str r0, [fp, " <> (toText offset))
+      addLine ("  str r0, [fp, #" <> (toText offset) <> "]")
 
   While condition body -> do
     loopStart <- makeLabel
@@ -169,9 +168,9 @@ addLine ln =
 emitInfix :: Expr -> Expr -> Emit () -> Emit ()
 emitInfix left right action = do
   emit left
-  addLine "push {r0, ip}"     -- push left (r0) onto stack with alignment
+  addLine "  push {r0, ip}"     -- push left (r0) onto stack with alignment
   emit right
-  addLine "pop {r1, ip}"      -- restore left result from stack
+  addLine "  pop {r1, ip}"      -- restore left result from stack
   action                      -- perform action on r0 and r1
 
 incrementLabelCounter :: Emit ()
