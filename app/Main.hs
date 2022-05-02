@@ -19,7 +19,6 @@ compile inPath outPath = do
   case parseOutput of
     Left err -> putStr err
     Right ast -> do
-      print parseOutput
       let code = emit ast
           compileOutput = execEmitDefault code
       case compileOutput of

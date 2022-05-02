@@ -284,9 +284,7 @@ functionStatement = label "function statement" $ do
   name <- identifier
   params <- parenthesized (identifier `sepBy` comma)
   block <- blockStatement
-  if name == "main"
-    then pure (Main block)
-    else pure (Function name params block)
+  pure (Function name params block)
 
 statement :: Parser Expr
 statement =
