@@ -1,4 +1,10 @@
 
+.global main
+main:
+  push {fp, lr}
+  mov fp, sp
+  push {r0, r1, r2, r3}
+
 .global factorial
 factorial:
   push {fp, lr}
@@ -36,12 +42,6 @@ factorial:
   mov sp, fp
   mov r0, #0
   pop {fp, pc}
-
-.global main
-main:
-  push {fp, lr}
-  mov fp, sp
-  push {r0, r1, r2, r3}
   ldr r0, =5
   bl factorial
   push {r0, ip}
