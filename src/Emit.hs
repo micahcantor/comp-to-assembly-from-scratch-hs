@@ -73,12 +73,12 @@ emit expr = case expr of
   Equal left right -> emitInfix left right $ do
     addLine "  cmp r0, r1"    -- compare left to right
     addLine "  moveq r0, #1"  -- if equal, store 1
-    addLine "  moveq r0, #0"  -- otherwise store 0
+    addLine "  movne r0, #0"  -- otherwise store 0
 
   NotEqual left right -> emitInfix left right $ do
     addLine "  cmp r0, r1"    -- compare left to right
     addLine "  moveq r0, #0"  -- if equal, store 0
-    addLine "  moveq r0, #1"  -- otherwise store 1
+    addLine "  movne r0, #1"  -- otherwise store 1
 
   Call callee args -> do
     let count = length args
