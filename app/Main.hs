@@ -3,6 +3,7 @@ module Main where
 import Emit
 import Parser
 import qualified Data.Text.Lazy.IO as TIO
+import qualified Data.Text.Lazy as T
 import System.Environment (getArgs)
 import Data.Text.Lazy.Builder (toLazyText)
 
@@ -23,4 +24,4 @@ compile inPath outPath = do
           compileOutput = execEmitDefault code
       case compileOutput of
         Left err -> print err
-        Right asm -> TIO.writeFile outPath (toLazyText asm)
+        Right asm -> TIO.writeFile outPath (T.stripStart (toLazyText asm))

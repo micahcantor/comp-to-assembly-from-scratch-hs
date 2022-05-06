@@ -22,6 +22,11 @@ factorial:
   moveq r0, #1
   cmp r0, #0
   beq .L2
+  ldr r0, [fp, #-16]
+  cmp r0, #1
+  moveq r0, #'.'
+  movne r0, #'F'
+  bl putchar
   ldr r0, [fp, #-24]
   push {r0, ip}
   ldr r0, [fp, #-16]
