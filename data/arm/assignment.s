@@ -34,7 +34,10 @@ main:
   cmp r0, r1
   moveq r0, #1
   moveq r0, #0
-  bl asssert
+  cmp r0, #1
+  moveq r0, #'.'
+  movne r0, #'F'
+  bl putchar
   mov sp, fp
   mov r0, #0
   pop {fp, pc}
