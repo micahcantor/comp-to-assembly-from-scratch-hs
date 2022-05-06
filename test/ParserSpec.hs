@@ -88,6 +88,18 @@ testSlashToken = do
     it "parses 2 / 2" $ do
       testParse expr "2 / 2" `shouldBe` Divide (Number 2) (Number 2)
 
+testNested :: Spec
+testNested = do
+  describe "expr" $ do
+    it "parses 1+1 == 2" $ do
+      testParse expr "1+1 == 2" `shouldBe` Equal (Add (Number 1) (Number 1)) (Number 2)
+    it "parses 1 - 1 == 0" $ do
+      testParse expr "1-1 == 0" `shouldBe` Equal (Subtract (Number 1) (Number 1)) (Number 0)
+    it "parses 1 + (1+2) == 4" $ do
+      testParse expr "1+(1+2) == 4" `shouldBe` Equal (Add (Number 1) (Add (Number 1) (Number 2))) (Number 4)
+    it "parses (1+2) + 2 == 4" $ do
+      testParse expr "(1+2) + 2 == 4" `shouldBe` Equal (Add (Add (Number 1) (Number 2)) (Number 2)) (Number 4)
+
 testCallExpr :: Spec
 testCallExpr = do
   describe "callExpr" $ do
@@ -190,7 +202,7 @@ testAssignmentStatement = do
       testParse statement "x = 42;" `shouldBe` Assign "x" (Number 42)
 
     it "parses assignment to addition" $ do
-      testParse statement "y = a + b;" 
+      testParse statement "y = a + b;"
         `shouldBe` Assign "y" (Add (Identifier "a") (Identifier "b"))
 
 testWhileStatement :: Spec
@@ -226,18 +238,24 @@ testParseFactorial = do
     factorialAST =
       Block
         [ Function
-            "factorial"
-            ["n"]
+            "main"
+            []
             ( Block
-                [ Var "result" (Number 1),
-                  While
-                    (NotEqual (Identifier "n") (Number 1))
-                    ( Block
-                        [ Assign "result" (Multiply (Identifier "result") (Identifier "n")),
-                          Assign "n" (Subtract (Identifier "n") (Number 1))
-                        ]
-                    ),
-                  Return (Identifier "result")
+                [ Function
+                    "factorial"
+                    ["n"]
+                    (Block
+                    [ Var "result" (Number 1),
+                      While
+                        (NotEqual (Identifier "n") (Number 1))
+                        ( Block
+                            [ Assign "result" (Multiply (Identifier "result") (Identifier "n")),
+                              Assign "n" (Subtract (Identifier "n") (Number 1))
+                            ]
+                        ),
+                      Return (Identifier "result")
+                    ]),
+                  Assert (Equal (Call "factorial" [Number 5.0]) (Number 120.0))
                 ]
             )
         ]
@@ -253,6 +271,7 @@ spec = do
   testMinusToken
   testStarToken
   testSlashToken
+  testNested
   testCallExpr
   testReturnStatement
   testBlockStatement

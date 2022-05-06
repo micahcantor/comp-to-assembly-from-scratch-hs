@@ -2,7 +2,6 @@ function main() {
     function factorial(n) {
         var result = 1;
         while (n != 1) {
-            assert(n);
             result = result * n;
             n = n - 1;
         }
