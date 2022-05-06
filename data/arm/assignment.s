@@ -1,4 +1,3 @@
-
 .global main
 main:
   push {fp, lr}
@@ -16,7 +15,7 @@ main:
   pop {r1, ip}
   cmp r0, r1
   moveq r0, #1
-  moveq r0, #0
+  movne r0, #0
   cmp r0, #1
   moveq r0, #'.'
   movne r0, #'F'
@@ -33,7 +32,7 @@ main:
   pop {r1, ip}
   cmp r0, r1
   moveq r0, #1
-  moveq r0, #0
+  movne r0, #0
   cmp r0, #1
   moveq r0, #'.'
   movne r0, #'F'
