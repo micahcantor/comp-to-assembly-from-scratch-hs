@@ -125,7 +125,7 @@ emit expr = case expr of
       addLine "  pop {fp, pc}" -- restore fp, pop the saved link register into pc to return
 
   Identifier name -> do
-    withLookupOffset name $ \offset ->
+    withVarLookup name $ \offset ->
       addLine ("  ldr r0, [fp, #" <> (toText offset) <> "]")
   
   Return term -> do
@@ -142,7 +142,7 @@ emit expr = case expr of
 
   Assign name value -> do
     emit value
-    withLookupOffset name $ \offset ->
+    withVarLookup name $ \offset ->
       addLine ("  str r0, [fp, #" <> (toText offset) <> "]")
 
   While condition body -> do
@@ -205,8 +205,8 @@ withContext ctx action = do
   action
   put oldCtx
 
-withLookupOffset :: Text -> (Int -> Emit ()) -> Emit ()
-withLookupOffset name withOffset = do
+withVarLookup :: Text -> (Int -> Emit ()) -> Emit ()
+withVarLookup name withOffset = do
   env <- gets locals
   case Map.lookup name env of
     Just offset -> 
