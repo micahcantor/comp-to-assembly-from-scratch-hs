@@ -1,2 +1,0 @@
-[x] Switch from Text to Builder
-[x] Add main method to executable

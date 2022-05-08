@@ -90,15 +90,33 @@ testSlashToken = do
 
 testNested :: Spec
 testNested = do
-  describe "expr" $ do
+  describe "infix" $ do
     it "parses 1+1 == 2" $ do
       testParse expr "1+1 == 2" `shouldBe` Equal (Add (Number 1) (Number 1)) (Number 2)
+
     it "parses 1 - 1 == 0" $ do
       testParse expr "1-1 == 0" `shouldBe` Equal (Subtract (Number 1) (Number 1)) (Number 0)
+
+    it "parses 3 - 2 == 1" $ do
+      testParse expr "3 - 2 == 1" `shouldBe` Equal (Subtract (Number 3) (Number 2)) (Number 1)
+
     it "parses 1 + (1+2) == 4" $ do
       testParse expr "1+(1+2) == 4" `shouldBe` Equal (Add (Number 1) (Add (Number 1) (Number 2))) (Number 4)
+
     it "parses (1+2) + 2 == 4" $ do
       testParse expr "(1+2) + 2 == 4" `shouldBe` Equal (Add (Add (Number 1) (Number 2)) (Number 2)) (Number 4)
+
+    it "parses 1 * 2 + 1 == 3" $ do
+      testParse expr "1 * 2 + 1 == 3" `shouldBe` Equal (Add (Multiply (Number 1) (Number 2)) (Number 1)) (Number 3)
+
+    it "parses 42 == 4 + 2 * (12 - 2) + 3 * (5 + 1)" $ do
+      testParse expr "42 == 4 + 2 * (12 - 2) + 3 * (5 + 1)"
+        `shouldBe` Equal
+          (Number 42)
+          ( Add
+              (Add (Number 4) (Multiply (Number 2) (Subtract (Number 12) (Number 2))))
+              (Multiply (Number 3) (Add (Number 5) (Number 1)))
+          )
 
 testCallExpr :: Spec
 testCallExpr = do
@@ -228,38 +246,6 @@ testWhileStatement = do
         }
       |]
 
-testParseFactorial :: Spec
-testParseFactorial = do
-  describe "factorial.js" $ do
-    it "parses factorial.js" $ do
-      src <- TIO.readFile "test/data/factorial.js"
-      testParse statements src `shouldBe` factorialAST
-  where
-    factorialAST =
-      Block
-        [ Function
-            "main"
-            []
-            ( Block
-                [ Function
-                    "factorial"
-                    ["n"]
-                    (Block
-                    [ Var "result" (Number 1),
-                      While
-                        (NotEqual (Identifier "n") (Number 1))
-                        ( Block
-                            [ Assign "result" (Multiply (Identifier "result") (Identifier "n")),
-                              Assign "n" (Subtract (Identifier "n") (Number 1))
-                            ]
-                        ),
-                      Return (Identifier "result")
-                    ]),
-                  Assert (Equal (Call "factorial" [Number 5.0]) (Number 120.0))
-                ]
-            )
-        ]
-
 spec :: Spec
 spec = do
   testNumberExpr
@@ -280,4 +266,3 @@ spec = do
   testVarStatement
   testAssignmentStatement
   testWhileStatement
-  testParseFactorial

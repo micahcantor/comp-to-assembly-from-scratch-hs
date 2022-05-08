@@ -15,6 +15,7 @@ import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text as T
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Debug.Trace (traceShowM)
 
 data CompilerError
   = Unsupported Text
@@ -59,41 +60,44 @@ emit expr = case expr of
     addLine "  movne r0, #0"  -- move 0 (false) into r0 if expr is 1
 
   Add left right -> emitInfix left right $
-    addLine "  add r0, r0, r1"
+    addLine "  add r0, r1, r0"
 
   Subtract left right -> emitInfix left right $
-    addLine "  sub r0, r0, r1"
+    addLine "  sub r0, r1, r0"
 
   Multiply left right -> emitInfix left right $
-    addLine "  mul r0, r0, r1"
+    addLine "  mul r0, r1, r0"
 
   Divide left right -> emitInfix left right $
-    addLine "  udiv r0, r0, r1"
+    addLine "  udiv r0, r1, r0"
 
   Equal left right -> emitInfix left right $ do
-    addLine "  cmp r0, r1"    -- compare left to right
+    addLine "  cmp r1, r0"    -- compare left to right
     addLine "  moveq r0, #1"  -- if equal, store 1
     addLine "  movne r0, #0"  -- otherwise store 0
 
   NotEqual left right -> emitInfix left right $ do
-    addLine "  cmp r0, r1"    -- compare left to right
+    addLine "  cmp r1, r0"    -- compare left to right
     addLine "  moveq r0, #0"  -- if equal, store 0
     addLine "  movne r0, #1"  -- otherwise store 1
 
   Call callee args -> do
     let count = length args
-    if count == 1 then
+    if count == 0 then
+      addLine ("  bl " <> callee) -- branch and link to function name
+    else if count == 1 then do
       emit (head args) -- if one arg, just emit it
+      addLine ("  bl " <> callee)
     else if count >= 2 && count <= 4 then do
       addLine "  sub sp, sp, #16" -- allocate 16 bytes for up to four args
       forM_ (zip args [0..4]) $ \(arg, i) -> do
         emit arg
         addLine ("  str r0, [sp, #" <> (toText (4 * i)) <> "]") -- store each arg in stack, offset in multiples of 4
       addLine "  pop {r0, r1, r2, r3}" -- pop args from stack into registers
-    else 
+      addLine ("  bl " <> callee)
+    else
       throwError (Unsupported "More than 4 arguments not supported")
-    addLine ("  bl " <> callee) -- branch and link to function name
-
+    
   If condition consequent alternate -> do
     ifFalseLabel <- makeLabel -- unique label for falsey branch
     endIfLabel <- makeLabel   -- unique label for after if is evaluated
