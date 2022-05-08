@@ -232,7 +232,7 @@ testParseFactorial :: Spec
 testParseFactorial = do
   describe "factorial.js" $ do
     it "parses factorial.js" $ do
-      src <- TIO.readFile "data/js/factorial.js"
+      src <- TIO.readFile "test/data/factorial.js"
       testParse statements src `shouldBe` factorialAST
   where
     factorialAST =
