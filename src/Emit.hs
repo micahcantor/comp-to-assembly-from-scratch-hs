@@ -50,7 +50,7 @@ emit expr = case expr of
   
   Number val ->
     -- load integer into r0, use ldr in case value can't fit in immediate.
-    addLine ("  ldr r0, =" <> (trimDouble (toText val))) 
+    addLine ("  ldr r0, =" <> trimDouble (toText val))
 
   Not expr -> do
     emit expr 
@@ -126,7 +126,7 @@ emit expr = case expr of
 
   Identifier name -> do
     withVarLookup name $ \offset ->
-      addLine ("  ldr r0, [fp, #" <> (toText offset) <> "]")
+      addLine ("  ldr r0, [fp, #" <> toText offset <> "]")
   
   Return term -> do
     emit term
@@ -143,7 +143,7 @@ emit expr = case expr of
   Assign name value -> do
     emit value
     withVarLookup name $ \offset ->
-      addLine ("  str r0, [fp, #" <> (toText offset) <> "]")
+      addLine ("  str r0, [fp, #" <> toText offset <> "]")
 
   While condition body -> do
     loopStart <- makeLabel
