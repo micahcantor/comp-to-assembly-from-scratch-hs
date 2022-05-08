@@ -50,6 +50,16 @@ testCompile = do
       out <- runAsm src
       out `shouldBe` "."
 
+    it "compiles assignment.js" $ do
+      let src = "test/data/assignment.js"
+      out <- runAsm src
+      out `shouldBe` ".."
+
+    it "compiles while.js" $ do
+      let src = "test/data/while.js"
+      out <- runAsm src
+      out `shouldBe` "."
+
     it "compiles parameters.js" $ do
       let src = "test/data/parameters.js"
       out <- runAsm src
