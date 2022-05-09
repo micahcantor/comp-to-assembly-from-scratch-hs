@@ -41,6 +41,9 @@ trueToken = lexeme (string "true" $> True) <?> "true"
 falseToken :: Parser Bool
 falseToken = lexeme (string "false" $> False) <?> "false"
 
+nullToken :: Parser Text
+nullToken = lexeme (string "null") <?> "null"
+
 functionToken :: Parser Text
 functionToken = lexeme (string "function") <?> "function"
 
@@ -132,7 +135,7 @@ parenthesized p = do
 {- Expression Parser Grammar:
 
   call <- ID LEFT_PAREN args RIGHT_PAREN
-  scalar <- boolean | ID | NUMBER
+  scalar <- boolean | null | ID | NUMBER
   atom <- call | scalar | LEFT_PAREN expression RIGHT_PAREN
   unary <- NOT? atom
   product <- unary ((STAR | SLASH) unary)*
@@ -151,10 +154,11 @@ callExpr = label "call" $ do
     then pure (Assert (head args))
     else pure (Call callee args)
 
--- scalar <- boolean | ID | NUMBER
+-- scalar <- boolean | null | ID | NUMBER
 scalarExpr :: Parser Expr
 scalarExpr = 
   booleanExpr
+    <|> nullExpr
     <|> identifierExpr
     <|> numberExpr
     <?> "scalar"
@@ -169,6 +173,9 @@ numberExpr = label "number" $
 booleanExpr :: Parser Expr
 booleanExpr = label "boolean" $ 
   Boolean <$> (trueToken <|> falseToken)
+
+nullExpr :: Parser Expr
+nullExpr = nullToken $> Null
 
 identifierExpr :: Parser Expr
 identifierExpr = Identifier <$> identifier

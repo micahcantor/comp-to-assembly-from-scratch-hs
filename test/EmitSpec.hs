@@ -40,6 +40,11 @@ testCompile = do
       out <- runAsm src
       out `shouldBe` ".."
 
+    it "compiles null.js" $ do
+      let src = "test/data/null.js"
+      out <- runAsm src
+      out `shouldBe` "."
+
     it "compiles math.js" $ do
       let src = "test/data/math.js"
       out <- runAsm src
@@ -73,7 +78,7 @@ testCompile = do
     it "compiles return.js" $ do
       let src = "test/data/return.js"
       out <- runAsm src
-      out `shouldBe` ".."
+      out `shouldBe` "....."
 
     it "compiles factorial.js" $ do
       let src = "test/data/factorial.js"

@@ -6,6 +6,7 @@ data Expr
   = Number Double
   | Identifier Text
   | Boolean Bool
+  | Null
   | Not Expr
   | Equal Expr Expr
   | NotEqual Expr Expr

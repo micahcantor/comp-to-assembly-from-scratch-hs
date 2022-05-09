@@ -46,6 +46,12 @@ testBooleanExpr = do
     it "parses false" $ do
       testParse expr "false" `shouldBe` Boolean False
 
+testNullExpr :: Spec
+testNullExpr = do
+  describe "nullExpr" $ do
+    it "parses null" $ do
+      testParse expr "null" `shouldBe` Null
+
 testNotToken :: Spec
 testNotToken = do
   describe "notToken" $ do
@@ -147,6 +153,9 @@ testReturnStatement = do
 
     it "parses return false" $ do
       testParse statement "return false;" `shouldBe` Return (Boolean False)
+
+    it "parses return null" $ do
+      testParse statement "return null;" `shouldBe` Return Null
 
 testBlockStatement :: Spec
 testBlockStatement = do
@@ -264,6 +273,8 @@ spec = do
   testIdentifierExpr
   testNotToken
   testEqualToken
+  testBooleanExpr
+  testNullExpr
   testNotEqualToken
   testPlusToken
   testMinusToken
