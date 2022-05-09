@@ -53,6 +53,12 @@ emit expr = case expr of
     -- load integer into r0, use ldr in case value can't fit in immediate.
     addLine ("  ldr r0, =" <> trimDouble (toText val))
 
+  Boolean val -> do
+    if val then
+      addLine "  mov r0, #1"
+    else
+      addLine "  mov r0, #0"
+
   Not expr -> do
     emit expr 
     addLine "  cmp r0, #0"    -- compare expr to zero

@@ -35,6 +35,11 @@ testCompile = do
       out <- runAsm src
       out `shouldBe` ".."
 
+    it "compiles boolean.js" $ do
+      let src = "test/data/boolean.js"
+      out <- runAsm src
+      out `shouldBe` ".."
+
     it "compiles math.js" $ do
       let src = "test/data/math.js"
       out <- runAsm src

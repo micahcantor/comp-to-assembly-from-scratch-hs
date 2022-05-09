@@ -5,6 +5,7 @@ import Data.Text (Text)
 data Expr
   = Number Double
   | Identifier Text
+  | Boolean Bool
   | Not Expr
   | Equal Expr Expr
   | NotEqual Expr Expr

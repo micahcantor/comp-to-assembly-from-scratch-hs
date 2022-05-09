@@ -9,6 +9,7 @@ import Expr
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import Data.Functor (($>))
 
 {- Megaparsec helpers -}
 
@@ -33,6 +34,12 @@ identifier = label "identifier" $
     rest <- many (alphaNumChar <|> char '_')
     let value = T.pack (firstChar : rest)
     pure value
+
+trueToken :: Parser Bool
+trueToken = lexeme (string "true" $> True) <?> "true"
+
+falseToken :: Parser Bool
+falseToken = lexeme (string "false" $> False) <?> "false"
 
 functionToken :: Parser Text
 functionToken = lexeme (string "function") <?> "function"
@@ -125,7 +132,8 @@ parenthesized p = do
 {- Expression Parser Grammar:
 
   call <- ID LEFT_PAREN args RIGHT_PAREN
-  atom <- call | ID | NUMBER | LEFT_PAREN expression RIGHT_PAREN
+  scalar <- boolean | ID | NUMBER
+  atom <- call | scalar | LEFT_PAREN expression RIGHT_PAREN
   unary <- NOT? atom
   product <- unary ((STAR | SLASH) unary)*
   sum <- product ((PLUS | MINUS) product)*
@@ -143,6 +151,14 @@ callExpr = label "call" $ do
     then pure (Assert (head args))
     else pure (Call callee args)
 
+-- scalar <- boolean | ID | NUMBER
+scalarExpr :: Parser Expr
+scalarExpr = 
+  booleanExpr
+    <|> identifierExpr
+    <|> numberExpr
+    <?> "scalar"
+
 numberExpr :: Parser Expr
 numberExpr = label "number" $
   lexeme $ do
@@ -150,15 +166,18 @@ numberExpr = label "number" $
     let value = read digits :: Double
     pure (Number value)
 
+booleanExpr :: Parser Expr
+booleanExpr = label "boolean" $ 
+  Boolean <$> (trueToken <|> falseToken)
+
 identifierExpr :: Parser Expr
 identifierExpr = Identifier <$> identifier
 
--- atom <- call | ID | NUMBER | LEFT_PAREN expression RIGHT_PAREN
+-- atom <- call | scalar | LEFT_PAREN expression RIGHT_PAREN
 atomExpr :: Parser Expr
 atomExpr =
   try callExpr
-    <|> identifierExpr
-    <|> numberExpr
+    <|> scalarExpr
     <|> parenthesized expr
     <?> "atom"
 

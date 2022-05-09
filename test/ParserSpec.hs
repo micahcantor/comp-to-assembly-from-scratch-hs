@@ -37,6 +37,15 @@ testIdentifierExpr = do
     it "parses _hello" $ do
       testParse expr "_hello" `shouldBe` Identifier "_hello"
 
+testBooleanExpr :: Spec
+testBooleanExpr = do
+  describe "booleanExpr" $ do
+    it "parses true" $ do
+      testParse expr "true" `shouldBe` Boolean True
+
+    it "parses false" $ do
+      testParse expr "false" `shouldBe` Boolean False
+
 testNotToken :: Spec
 testNotToken = do
   describe "notToken" $ do
@@ -135,6 +144,9 @@ testReturnStatement = do
 
     it "parses return n-1" $ do
       testParse statement "return n-1;" `shouldBe` Return (Subtract (Identifier "n") (Number 1))
+
+    it "parses return false" $ do
+      testParse statement "return false;" `shouldBe` Return (Boolean False)
 
 testBlockStatement :: Spec
 testBlockStatement = do
