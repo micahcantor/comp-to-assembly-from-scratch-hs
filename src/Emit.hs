@@ -93,6 +93,40 @@ emit expr = case expr of
     addLine "  moveq r0, #0"  -- if equal, store 0
     addLine "  movne r0, #1"  -- otherwise store 1
 
+  ArrayLiteral args -> do
+    let len = length args
+    addLine ("  ldr r0, =" <> toText (4 * (len + 1))) -- we allocate 4 bytes for each element, plus 1 for storing len
+    addLine "  bl malloc" -- call malloc
+    addLine "  push {r4, ip}" -- save the current val of r4
+    addLine "  mov r4, r0" -- store malloc pointer in r4
+    addLine (" ldr r0, " <> toText len) -- prepare to store length
+    addLine "  str r0, [r4]" -- store length in the first word of allocated space
+    forM_ (zip args [1..]) $ \(arg, i) -> do
+      emit arg
+      -- store each argument in its spot, offset by 4 bytes
+      addLine ("  str r0, [r4, #" <> toText (4 * i) <> "]")
+    addLine "  mov r0, r4" -- return pointer to r0
+    addLine "  pop {r4, ip}" -- restore r4
+
+  ArrayLookup array index -> do
+    emit array -- put array pointer in r0
+    addLine "  push {r0, ip}" -- save array pointer
+    emit index -- put array index in r0
+    addLine "  pop {r1, ip}" -- put array pointer in r1
+    addLine "  ldr r2, [r1]" -- load array length into r2
+
+    addLine "  cmp r0, r2" -- bound-check index and length
+    addLine "  movhs r0, #0" -- index out of bounds, return 0
+    
+    -- bound check succeeds
+    addLine "  addlo r1, r1, #4" -- add 4 to pointer to skip length
+    addLine "  lsllo r0, r0, #2" -- shift index left by 2, multiplying by 4 to convert from word offset to byte offset
+    addLine "  ldr r0, [r1, r0]" -- return address of array at index by byte offset
+
+  Length array -> do
+    emit array -- get array pointer in r0
+    addLine "  ldr r0, [r0, #0]" -- return value of length, stored at first word of array pointer
+
   Call callee args -> do
     let count = length args
     if count == 0 then

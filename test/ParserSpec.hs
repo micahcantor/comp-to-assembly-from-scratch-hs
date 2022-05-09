@@ -58,6 +58,37 @@ testUndefinedExpr = do
     it "parses undefined" $ do
       testParse expr "undefined" `shouldBe` Undefined
 
+testArrayLiteralExpr :: Spec
+testArrayLiteralExpr = do
+  describe "arrayLiteralExpr" $ do
+    it "parses [1, 2, 3]" $ do
+      testParse expr "[1, 2, 3]" `shouldBe` ArrayLiteral (map Number [1, 2, 3])
+
+    it "parses [x, y]" $ do
+      testParse expr "[x, y]" `shouldBe` ArrayLiteral (map Identifier ["x", "y"])
+
+    it "parses [x, 1, y, 2]" $ do
+      testParse expr "[x, 1, y, 2]" `shouldBe` ArrayLiteral [Identifier "x", Number 1, Identifier "y", Number 2]
+
+    it "parses []" $ do
+      testParse expr "[]" `shouldBe` ArrayLiteral []
+
+testArrayLookupExpr :: Spec
+testArrayLookupExpr = do
+  describe "arrayLookupExpr" $ do
+    it "parses arr[0]" $ do
+      testParse expr "arr[0]" `shouldBe` ArrayLookup (Identifier "arr") (Number 0)
+    
+    it "parses arr[1 + 2]" $ do
+      testParse expr "arr[1 + 2]" `shouldBe` ArrayLookup (Identifier "arr") (Add (Number 1) (Number 2))
+
+    it "parses arr[i]" $ do
+      testParse expr "arr[i]" `shouldBe` ArrayLookup (Identifier "arr") (Identifier "i")
+
+    it "parses [1, 2, 3][0]" $ do
+      testParse expr "[1, 2, 3][0]" `shouldBe` ArrayLookup (ArrayLiteral (map Number [1, 2, 3])) (Number 0)
+
+
 testNotToken :: Spec
 testNotToken = do
   describe "notToken" $ do
@@ -282,6 +313,8 @@ spec = do
   testBooleanExpr
   testNullExpr
   testUndefinedExpr
+  testArrayLiteralExpr
+  testArrayLookupExpr
   testNotEqualToken
   testPlusToken
   testMinusToken

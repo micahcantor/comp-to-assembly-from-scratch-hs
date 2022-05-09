@@ -6,6 +6,9 @@ data Expr
   = Number Double
   | Identifier Text
   | Boolean Bool
+  | ArrayLiteral [Expr]
+  | ArrayLookup Expr Expr -- array, index
+  | Length Expr
   | Null
   | Undefined
   | Not Expr

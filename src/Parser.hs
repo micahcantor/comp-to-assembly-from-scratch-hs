@@ -74,6 +74,12 @@ assign = lexeme (string "=") <?> "'='"
 semicolon :: Parser Text
 semicolon = lexeme (string ";") <?> "';'"
 
+leftBracket :: Parser Text
+leftBracket = lexeme (string "[") <?> "'['"
+
+rightBracket :: Parser Text
+rightBracket = lexeme (string "]") <?> "']'"
+
 leftParen :: Parser Text
 leftParen = lexeme (string "(") <?> "'('"
 
@@ -139,7 +145,9 @@ parenthesized p = do
 
   call <- ID LEFT_PAREN args RIGHT_PAREN
   scalar <- boolean | null | undefined | ID | NUMBER
-  atom <- call | scalar | LEFT_PAREN expression RIGHT_PAREN
+  arrayLiteral <- LEFT_BRACKET args RIGHT_BRACKET
+  arrayLookup <- ID LEFT_BRACKET expression RIGHT_BRACKET
+  atom <- call | arrayLiteral | arrayLookup | scalar | LEFT_PAREN expression RIGHT_PAREN
   unary <- NOT? atom
   product <- unary ((STAR | SLASH) unary)*
   sum <- product ((PLUS | MINUS) product)*
@@ -167,6 +175,21 @@ scalarExpr =
     <|> numberExpr
     <?> "scalar"
 
+-- arrayLiteral <- LEFT_BRACKET args RIGHT_BRACKET
+arrayLiteralExpr :: Parser Expr
+arrayLiteralExpr = do
+  _ <- leftBracket
+  args <- expr `sepBy` comma
+  _ <- rightBracket
+  pure (ArrayLiteral args)
+
+-- arrayLookup <- ID LEFT_BRACKET expression RIGHT_BRACKET
+arrayLookupExpr :: Parser Expr
+arrayLookupExpr = do
+  array <- identifierExpr <|> arrayLiteralExpr
+  index <- between leftBracket rightBracket expr
+  pure (ArrayLookup array index)
+
 numberExpr :: Parser Expr
 numberExpr = label "number" $
   lexeme $ do
@@ -187,10 +210,12 @@ undefinedExpr = undefinedToken $> Undefined
 identifierExpr :: Parser Expr
 identifierExpr = Identifier <$> identifier
 
--- atom <- call | scalar | LEFT_PAREN expression RIGHT_PAREN
+-- atom <- call | arrayLiteral | arrayLookup | scalar | LEFT_PAREN expression RIGHT_PAREN
 atomExpr :: Parser Expr
 atomExpr =
   try callExpr
+    <|> try arrayLookupExpr
+    <|> arrayLiteralExpr
     <|> scalarExpr
     <|> parenthesized expr
     <?> "atom"
