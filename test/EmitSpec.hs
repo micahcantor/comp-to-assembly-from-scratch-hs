@@ -95,6 +95,11 @@ testCompile = do
       out <- runAsm src
       out `shouldBe` "."
 
+    it "compiles array.js" $ do
+      let src = "test/data/array.js"
+      out <- runAsm src
+      out `shouldBe` "...."
+
 spec :: Spec
 spec =
   testCompile

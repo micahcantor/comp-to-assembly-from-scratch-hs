@@ -88,6 +88,18 @@ testArrayLookupExpr = do
     it "parses [1, 2, 3][0]" $ do
       testParse expr "[1, 2, 3][0]" `shouldBe` ArrayLookup (ArrayLiteral (map Number [1, 2, 3])) (Number 0)
 
+testLengthExpr :: Spec
+testLengthExpr = do
+  describe "lengthExpr" $ do
+    it "parses length(x)" $ do
+      testParse expr "length(x)" `shouldBe` (Length (Identifier "x"))
+    
+    it "parses length([1, 2, 3])" $ do
+      testParse expr "length([1, 2, 3])" `shouldBe` Length (ArrayLiteral (map Number [1, 2, 3]))
+
+    it "parses length([])" $ do
+      testParse expr "length([])" `shouldBe` Length (ArrayLiteral [])
+
 
 testNotToken :: Spec
 testNotToken = do
@@ -315,6 +327,7 @@ spec = do
   testUndefinedExpr
   testArrayLiteralExpr
   testArrayLookupExpr
+  testLengthExpr
   testNotEqualToken
   testPlusToken
   testMinusToken

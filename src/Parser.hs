@@ -65,6 +65,9 @@ varToken = lexeme (string "var") <?> "var"
 whileToken :: Parser Text
 whileToken = lexeme (string "while") <?> "while"
 
+lengthToken :: Parser Text
+lengthToken = lexeme (string "length") <?> "length"
+
 comma :: Parser Text
 comma = lexeme (string ",") <?> "','"
 
@@ -143,6 +146,7 @@ parenthesized p = do
 
 {- Expression Parser Grammar:
 
+  length <- LENGTH LEFT_PAREN expression RIGHT_PAREN
   call <- ID LEFT_PAREN args RIGHT_PAREN
   scalar <- boolean | null | undefined | ID | NUMBER
   arrayLiteral <- LEFT_BRACKET args RIGHT_BRACKET
@@ -155,6 +159,13 @@ parenthesized p = do
   expression <- comparison
 
 -}
+
+-- length <- LENGTH LEFT_PAREN expression RIGHT_PAREN
+lengthExpr :: Parser Expr
+lengthExpr = do
+  _ <- lengthToken
+  array <- parenthesized expr
+  pure (Length array)
 
 -- call <- ID LEFT_PAREN args RIGHT_PAREN
 callExpr :: Parser Expr
@@ -210,10 +221,11 @@ undefinedExpr = undefinedToken $> Undefined
 identifierExpr :: Parser Expr
 identifierExpr = Identifier <$> identifier
 
--- atom <- call | arrayLiteral | arrayLookup | scalar | LEFT_PAREN expression RIGHT_PAREN
+-- atom <- length | call | arrayLiteral | arrayLookup | scalar | LEFT_PAREN expression RIGHT_PAREN
 atomExpr :: Parser Expr
 atomExpr =
-  try callExpr
+  lengthExpr
+    <|> try callExpr
     <|> try arrayLookupExpr
     <|> arrayLiteralExpr
     <|> scalarExpr

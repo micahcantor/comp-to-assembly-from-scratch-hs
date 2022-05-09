@@ -99,7 +99,7 @@ emit expr = case expr of
     addLine "  bl malloc" -- call malloc
     addLine "  push {r4, ip}" -- save the current val of r4
     addLine "  mov r4, r0" -- store malloc pointer in r4
-    addLine (" ldr r0, " <> toText len) -- prepare to store length
+    addLine ("  ldr r0, =" <> toText len) -- prepare to store length
     addLine "  str r0, [r4]" -- store length in the first word of allocated space
     forM_ (zip args [1..]) $ \(arg, i) -> do
       emit arg
