@@ -15,7 +15,7 @@ import qualified Data.Text.Lazy.Builder as Builder
 import qualified Data.Text as T
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Debug.Trace (traceShowM)
+import Data.Foldable (forM_)
 
 data CompilerError
   = Unsupported Text
@@ -163,7 +163,6 @@ emit expr = case expr of
   Block stmts ->
     forM_ stmts emit
 
-
 addLine :: Text -> Emit ()
 addLine ln = 
   let builder = Builder.fromText (ln <> "\n")
@@ -192,8 +191,8 @@ defaultContext = Context Map.empty 0 0
 bind :: [Text] -> Context
 bind params = defaultContext {locals = locals, nextLocalOffset = nextLocalOffset}
   where
-    locals = foldr update Map.empty (zip params [0..])
-    update (param, i) = Map.insert param (4 * i - 16)
+    offsets = [4 * i - 16 | i <- [0..]]
+    locals = Map.fromList (zip params offsets)
     nextLocalOffset = -20 -- 4 bytes after the allocated 4 params
 
 setLocals :: Map Text Int -> Emit ()
