@@ -52,6 +52,12 @@ testNullExpr = do
     it "parses null" $ do
       testParse expr "null" `shouldBe` Null
 
+testUndefinedExpr :: Spec
+testUndefinedExpr = do
+  describe "undefinedExpr" $ do
+    it "parses undefined" $ do
+      testParse expr "undefined" `shouldBe` Undefined
+
 testNotToken :: Spec
 testNotToken = do
   describe "notToken" $ do
@@ -275,6 +281,7 @@ spec = do
   testEqualToken
   testBooleanExpr
   testNullExpr
+  testUndefinedExpr
   testNotEqualToken
   testPlusToken
   testMinusToken

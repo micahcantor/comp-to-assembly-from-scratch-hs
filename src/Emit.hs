@@ -62,6 +62,9 @@ emit expr = case expr of
   Null ->
     addLine "  mov r0, #0"
 
+  Undefined ->
+    addLine "  mov r0, #0"
+
   Not expr -> do
     emit expr 
     addLine "  cmp r0, #0"    -- compare expr to zero

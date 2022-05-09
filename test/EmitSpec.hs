@@ -45,6 +45,11 @@ testCompile = do
       out <- runAsm src
       out `shouldBe` "."
 
+    it "compiles undefined.js" $ do
+      let src = "test/data/undefined.js"
+      out <- runAsm src
+      out `shouldBe` "."
+
     it "compiles math.js" $ do
       let src = "test/data/math.js"
       out <- runAsm src

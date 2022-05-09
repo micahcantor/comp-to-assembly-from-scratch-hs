@@ -7,6 +7,7 @@ data Expr
   | Identifier Text
   | Boolean Bool
   | Null
+  | Undefined
   | Not Expr
   | Equal Expr Expr
   | NotEqual Expr Expr
