@@ -19,7 +19,6 @@ import Data.Foldable (forM_)
 
 data CompilerError
   = Unsupported Text
-  | BadSyntax Text
   | UndefinedVariable Text
   deriving (Eq, Show)
 
@@ -29,15 +28,15 @@ data Context = Context
     nextLocalOffset :: Int
   }
 
-type Asm = Builder
+type AsmSrc = Builder
 
-newtype Emit a = Emit {unEmit :: StateT Context (WriterT Asm (ExceptT CompilerError Identity)) a}
-  deriving (Functor, Applicative, Monad, MonadState Context, MonadError CompilerError, MonadWriter Asm)
+newtype Emit a = Emit {unEmit :: StateT Context (WriterT AsmSrc (ExceptT CompilerError Identity)) a}
+  deriving (Functor, Applicative, Monad, MonadState Context, MonadError CompilerError, MonadWriter AsmSrc)
 
-execEmit :: Context -> Emit a -> Either CompilerError Asm
+execEmit :: Context -> Emit a -> Either CompilerError AsmSrc
 execEmit state emit = runIdentity (runExceptT (execWriterT (execStateT (unEmit emit) state)))
 
-execEmitDefault :: Emit a -> Either CompilerError Asm
+execEmitDefault :: Emit a -> Either CompilerError AsmSrc
 execEmitDefault = execEmit defaultContext
 
 emit :: Expr -> Emit ()
@@ -51,9 +50,9 @@ emit expr = case expr of
   
   Number val ->
     -- load integer into r0, use ldr in case value can't fit in immediate.
-    addLine ("  ldr r0, =" <> trimDouble (toText val))
+    addLine ("  ldr r0, =" <> toText val)
 
-  Boolean val -> do
+  Boolean val ->
     if val then
       addLine "  mov r0, #1"
     else
@@ -210,9 +209,7 @@ emit expr = case expr of
     forM_ stmts emit
 
 addLine :: Text -> Emit ()
-addLine ln = 
-  let builder = Builder.fromText (ln <> "\n")
-   in pass (pure ((), (<> builder)))
+addLine ln = tell (Builder.fromText (ln <> "\n"))
 
 emitInfix :: Expr -> Expr -> Emit () -> Emit ()
 emitInfix left right action = do
@@ -265,9 +262,3 @@ withVarLookup name withOffset = do
 
 toText :: Show a => a -> Text
 toText = T.pack . show
-
-trimDouble :: Text -> Text
-trimDouble txt =
-  case T.stripSuffix ".0" txt of
-    Just digits -> digits
-    Nothing -> txt

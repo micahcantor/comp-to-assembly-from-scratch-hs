@@ -205,7 +205,7 @@ numberExpr :: Parser Expr
 numberExpr = label "number" $
   lexeme $ do
     digits <- some numberChar
-    let value = read digits :: Double
+    let value = read digits :: Integer
     pure (Number value)
 
 booleanExpr :: Parser Expr

@@ -41,7 +41,7 @@ executable comp-to-assembly-from-scratch-hs
 
 test-suite comp-to-assembly-from-scratch-hs-test
     main-is:          Spec.hs
-    other-modules:    ParserSpec
+    other-modules:    ParserSpec, EmitSpec
     hs-source-dirs:   test
     type:             exitcode-stdio-1.0
     default-language: Haskell2010

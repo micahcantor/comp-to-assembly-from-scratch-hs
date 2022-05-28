@@ -10,10 +10,10 @@ runAsm src = do
   let asmSrc = (replaceDirectory src "test/dist") -<.> ".s"
   callProcess "mkdir" ["-p", "test/dist/"]
   compile src asmSrc
-  let cc = "arm-none-linux-gnueabihf-gcc"
+  let cc = "arm-linux-gnueabihf-gcc"
   let binPath = dropExtension asmSrc
   callProcess cc ["-static", asmSrc, "-o", binPath]
-  let qemu = "qemu-arm-static"
+  let qemu = "qemu-arm"
   out <- readProcess qemu [binPath] []
   pure out
 

@@ -3,7 +3,7 @@ module Expr where
 import Data.Text (Text)
 
 data Expr
-  = Number Double
+  = Number Integer
   | Identifier Text
   | Boolean Bool
   | ArrayLiteral [Expr]
