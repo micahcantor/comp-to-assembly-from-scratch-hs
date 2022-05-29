@@ -5,8 +5,7 @@
 module Emit where
 
 import Control.Monad.Writer ( execWriterT, MonadWriter(..), WriterT )
-import Control.Monad.Except ( runExceptT, MonadError(..), ExceptT )
-import Control.Monad.Identity (Identity (runIdentity))
+import Control.Monad.Except ( runExcept, MonadError(..), Except )
 import Control.Monad.State ( gets, modify, execStateT, MonadState(..), StateT(..) )
 import Data.Text (Text)
 import Expr (Expr(..))
@@ -30,11 +29,11 @@ data Context = Context
 
 type AsmSrc = Builder
 
-newtype Emit a = Emit {unEmit :: StateT Context (WriterT AsmSrc (ExceptT CompilerError Identity)) a}
+newtype Emit a = Emit {unEmit :: StateT Context (WriterT AsmSrc (Except CompilerError)) a}
   deriving (Functor, Applicative, Monad, MonadState Context, MonadError CompilerError, MonadWriter AsmSrc)
 
 execEmit :: Context -> Emit a -> Either CompilerError AsmSrc
-execEmit state emit = runIdentity (runExceptT (execWriterT (execStateT (unEmit emit) state)))
+execEmit state emit = runExcept (execWriterT (execStateT (unEmit emit) state))
 
 execEmitDefault :: Emit a -> Either CompilerError AsmSrc
 execEmitDefault = execEmit defaultContext
@@ -85,17 +84,17 @@ emit expr = case expr of
     addLine "  moveq r0, #0"  -- if equal, store 0
     addLine "  movne r0, #1"  -- otherwise store 1
 
-  ArrayLiteral args -> do
-    let len = length args
+  ArrayLiteral elements -> do
+    let len = length elements
     addLine ("  ldr r0, =" <> toText (4 * (len + 1))) -- we allocate 4 bytes for each element, plus 1 for storing len
     addLine "  bl malloc" -- call malloc
     addLine "  push {r4, ip}" -- save the current val of r4
     addLine "  mov r4, r0" -- store malloc pointer in r4
     addLine ("  ldr r0, =" <> toText len) -- prepare to store length
     addLine "  str r0, [r4]" -- store length in the first word of allocated space
-    forM_ (zip args [1..]) $ \(arg, i) -> do
-      emit arg
-      -- store each argument in its spot, offset by 4 bytes
+    forM_ (zip elements [1..]) $ \(element, i) -> do
+      emit element
+      -- store each element in its spot, offset by 4 bytes
       addLine ("  str r0, [r4, #" <> toText (4 * i) <> "]")
     addLine "  mov r0, r4" -- return pointer to r0
     addLine "  pop {r4, ip}" -- restore r4
@@ -130,7 +129,7 @@ emit expr = case expr of
       addLine "  sub sp, sp, #16" -- allocate 16 bytes for up to four args
       forM_ (zip args [0..4]) $ \(arg, i) -> do
         emit arg
-        addLine ("  str r0, [sp, #" <> (toText (4 * i)) <> "]") -- store each arg in stack, offset in multiples of 4
+        addLine ("  str r0, [sp, #" <> toText (4 * i) <> "]") -- store each arg in stack, offset in multiples of 4
       addLine "  pop {r0, r1, r2, r3}" -- pop args from stack into registers
       addLine ("  bl " <> callee)
     else
@@ -214,7 +213,7 @@ emitInfix left right action = do
   action                      -- perform action on r0 and r1
 
 incrementLabelCounter :: Emit ()
-incrementLabelCounter = modify (\s -> s {labelCounter = (labelCounter s) + 1})
+incrementLabelCounter = modify (\s -> s {labelCounter = labelCounter s + 1})
 
 makeLabel :: Emit Text
 makeLabel = do
@@ -243,6 +242,7 @@ withContext ctx action = do
   Context{locals, nextLocalOffset} <- get
   put ctx
   action
+  -- reset locals and nextLocalOffset
   setLocals locals
   setNextLocalOffset nextLocalOffset
 

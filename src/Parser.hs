@@ -252,15 +252,15 @@ parseInfix operatorParser termParser = do
 
 -- product <- unary ((STAR / SLASH) unary)*
 productExpr :: Parser Expr
-productExpr = (parseInfix (star <|> slash) unaryExpr <?> "product")
+productExpr = parseInfix (star <|> slash) unaryExpr <?> "product"
 
 -- sum <- product ((PLUS / MINUS) product)*
 sumExpr :: Parser Expr
-sumExpr = (parseInfix (plus <|> minus) productExpr <?> "sum")
+sumExpr = parseInfix (plus <|> minus) productExpr <?> "sum"
 
 -- comparison <- sum ((EQUAL / NOT_EQUAL) sum)*
 comparisonExpr :: Parser Expr
-comparisonExpr = (parseInfix (equal <|> notEqual) sumExpr <?> "comparison")
+comparisonExpr = parseInfix (equal <|> notEqual) sumExpr <?> "comparison"
 
 expr :: Parser Expr
 expr = comparisonExpr <?> "expression"
