@@ -4,3 +4,11 @@ function main() {
   var z = x + y;
   assert(z == 42);
 }
+
+function assert(x) {
+  if (x) {
+      putchar(46);
+  } else {
+      putchar(70);
+  }
+}

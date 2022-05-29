@@ -5,3 +5,11 @@ function main() {
   }
   assert(i == 3);
 }
+
+function assert(x) {
+  if (x) {
+      putchar(46);
+  } else {
+      putchar(70);
+  }
+}

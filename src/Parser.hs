@@ -172,9 +172,7 @@ callExpr :: Parser Expr
 callExpr = label "call" $ do
   callee <- identifier
   args <- parenthesized (expr `sepBy` comma)
-  if callee == "assert"
-    then pure (Assert (head args))
-    else pure (Call callee args)
+  pure (Call callee args)
 
 -- scalar <- boolean | null | undefined | ID | NUMBER
 scalarExpr :: Parser Expr

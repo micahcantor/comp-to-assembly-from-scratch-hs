@@ -4,10 +4,10 @@
 
 module Emit where
 
-import Control.Monad.Writer
-import Control.Monad.Except
+import Control.Monad.Writer ( execWriterT, MonadWriter(..), WriterT )
+import Control.Monad.Except ( runExceptT, MonadError(..), ExceptT )
 import Control.Monad.Identity (Identity (runIdentity))
-import Control.Monad.State
+import Control.Monad.State ( gets, modify, execStateT, MonadState(..), StateT(..) )
 import Data.Text (Text)
 import Expr (Expr(..))
 import Data.Text.Lazy.Builder (Builder)
@@ -41,13 +41,6 @@ execEmitDefault = execEmit defaultContext
 
 emit :: Expr -> Emit ()
 emit expr = case expr of
-  Assert condition -> do
-    emit condition
-    addLine "  cmp r0, #1"      -- compare to 1 to see if truthy
-    addLine "  moveq r0, #'.'"  -- save ASCII dot to signify success
-    addLine "  movne r0, #'F'"  -- save code F to signify failure
-    addLine "  bl putchar"      -- call libc putchar to print code
-  
   Number val ->
     -- load integer into r0, use ldr in case value can't fit in immediate.
     addLine ("  ldr r0, =" <> toText val)
@@ -167,13 +160,14 @@ emit expr = case expr of
       addLine "  mov fp, sp"     -- set new frame pointer to current stack pointer
       addLine "  push {r0, r1, r2, r3}" -- save argument registers
       -- body
-      withContext (bind params) (emit body)
+      ctx <- bindParams params
+      withContext ctx (emit body)
       -- epilogue
       addLine "  mov sp, fp"   -- deallocate stack space used for current frame
       addLine "  mov r0, #0"   -- implicitly set return value to 0
       addLine "  pop {fp, pc}" -- restore fp, pop the saved link register into pc to return
 
-  Identifier name -> do
+  Identifier name ->
     withVarLookup name $ \offset ->
       addLine ("  ldr r0, [fp, #" <> toText offset <> "]")
   
@@ -231,12 +225,12 @@ makeLabel = do
 defaultContext :: Context
 defaultContext = Context Map.empty 0 0
 
-bind :: [Text] -> Context
-bind params = defaultContext {locals = locals, nextLocalOffset = nextLocalOffset}
-  where
-    offsets = [4 * i - 16 | i <- [0..]]
-    locals = Map.fromList (zip params offsets)
-    nextLocalOffset = -20 -- 4 bytes after the allocated 4 params
+bindParams :: [Text] -> Emit Context
+bindParams params = do
+  let offsets = [4 * i - 16 | i <- [0..]]
+  setLocals (Map.fromList (zip params offsets))
+  setNextLocalOffset (-20) -- 4 bytes after the allocated 4 params
+  get
 
 setLocals :: Map Text Int -> Emit ()
 setLocals locals = modify (\s -> s {locals = locals})
@@ -246,10 +240,11 @@ setNextLocalOffset offset = modify (\s -> s {nextLocalOffset = offset})
 
 withContext :: Context -> Emit () -> Emit ()
 withContext ctx action = do
-  oldCtx <- get
+  Context{locals, nextLocalOffset} <- get
   put ctx
   action
-  put oldCtx
+  setLocals locals
+  setNextLocalOffset nextLocalOffset
 
 withVarLookup :: Text -> (Int -> Emit ()) -> Emit ()
 withVarLookup name withOffset = do

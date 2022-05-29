@@ -9,3 +9,11 @@ function factorial(n) {
     return n * factorial(n - 1);
   }
 }
+
+function assert(x) {
+  if (x) {
+      putchar(46);
+  } else {
+      putchar(70);
+  }
+}

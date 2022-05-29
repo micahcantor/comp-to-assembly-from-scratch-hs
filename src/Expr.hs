@@ -26,5 +26,4 @@ data Expr
   | Var Text Expr -- name, value
   | Assign Text Expr -- name, value
   | While Expr Expr -- condition, body
-  | Assert Expr -- for debugging before function call implementation
   deriving (Eq, Show)

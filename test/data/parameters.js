@@ -12,3 +12,11 @@ function assert1234(a, b, c, d) {
   assert(c == 3);
   assert(d == 4);
 }
+
+function assert(x) {
+  if (x) {
+      putchar(46);
+  } else {
+      putchar(70);
+  }
+}
