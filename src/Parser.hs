@@ -1,6 +1,7 @@
 module Parser where
 
 import Data.Foldable (foldl')
+import Data.Functor (($>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -9,7 +10,6 @@ import Expr
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Data.Functor (($>))
 
 {- Megaparsec helpers -}
 
@@ -176,7 +176,7 @@ callExpr = label "call" $ do
 
 -- scalar <- boolean | null | undefined | ID | NUMBER
 scalarExpr :: Parser Expr
-scalarExpr = 
+scalarExpr =
   booleanExpr
     <|> nullExpr
     <|> undefinedExpr
@@ -207,8 +207,9 @@ numberExpr = label "number" $
     pure (Number value)
 
 booleanExpr :: Parser Expr
-booleanExpr = label "boolean" $ 
-  Boolean <$> (trueToken <|> falseToken)
+booleanExpr =
+  label "boolean" $
+    Boolean <$> (trueToken <|> falseToken)
 
 nullExpr :: Parser Expr
 nullExpr = nullToken $> Null

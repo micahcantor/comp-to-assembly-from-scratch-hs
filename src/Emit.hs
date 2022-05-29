@@ -4,17 +4,17 @@
 
 module Emit where
 
-import Control.Monad.Writer ( execWriterT, MonadWriter(..), WriterT )
-import Control.Monad.Except ( runExcept, MonadError(..), Except )
-import Control.Monad.State ( gets, modify, execStateT, MonadState(..), StateT(..) )
-import Data.Text (Text)
-import Expr (Expr(..))
-import Data.Text.Lazy.Builder (Builder)
-import qualified Data.Text.Lazy.Builder as Builder
-import qualified Data.Text as T
+import Control.Monad.Except (Except, MonadError (..), runExcept)
+import Control.Monad.State (MonadState (..), StateT (..), execStateT, gets, modify)
+import Control.Monad.Writer (MonadWriter (..), WriterT, execWriterT)
+import Data.Foldable (forM_)
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Foldable (forM_)
+import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Text.Lazy.Builder (Builder)
+import qualified Data.Text.Lazy.Builder as Builder
+import Expr (Expr (..))
 
 data CompilerError
   = Unsupported Text
@@ -242,7 +242,6 @@ withContext ctx action = do
   Context{locals, nextLocalOffset} <- get
   put ctx
   action
-  -- reset locals and nextLocalOffset
   setLocals locals
   setNextLocalOffset nextLocalOffset
 
