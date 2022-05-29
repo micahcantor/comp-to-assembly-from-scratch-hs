@@ -21,35 +21,33 @@ factorial:
   push {fp, lr}
   mov fp, sp
   push {r0, r1, r2, r3}
-  ldr r0, =1
-  push {r0, ip}
-.L1:
   ldr r0, [fp, #-16]
   push {r0, ip}
   ldr r0, =1
   pop {r1, ip}
   cmp r1, r0
-  moveq r0, #0
-  movne r0, #1
+  moveq r0, #1
+  movne r0, #0
   cmp r0, #0
-  beq .L2
-  ldr r0, [fp, #-24]
-  push {r0, ip}
+  beq .L1
+  ldr r0, =1
+  mov sp, fp
+  pop {fp, pc}
+  b .L2
+.L1:
   ldr r0, [fp, #-16]
-  pop {r1, ip}
-  mul r0, r1, r0
-  str r0, [fp, #-24]
+  push {r0, ip}
   ldr r0, [fp, #-16]
   push {r0, ip}
   ldr r0, =1
   pop {r1, ip}
   sub r0, r1, r0
-  str r0, [fp, #-16]
-  b .L1
-.L2:
-  ldr r0, [fp, #-24]
+  bl factorial
+  pop {r1, ip}
+  mul r0, r1, r0
   mov sp, fp
   pop {fp, pc}
+.L2:
   mov sp, fp
   mov r0, #0
   pop {fp, pc}
